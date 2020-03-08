@@ -1,9 +1,10 @@
 from requests import get
 from bs4 import BeautifulSoup
-import threading
+from threading import Timer
 from Car import Car
 from TelegramBot import TelegramBot
 from OneTimePassword import OneTimePassword
+from concurrent.futures import ThreadPoolExecutor
 
 FETCH_NEW_DATA_PERIOD = 60 * 5  # Every 5 minuets
 URL_ADDRESS = "https://api.divar.ir/v8/web-search/{city}/car?q=تصادفی"
@@ -77,10 +78,10 @@ def on_telegram_message_received(update, context):
 
 
 def main(cities):
-    threading.Timer(FETCH_NEW_DATA_PERIOD, main, args=(cities,)).start()
+    Timer(FETCH_NEW_DATA_PERIOD, main, args=(cities,)).start()
     if bot_users_ids:
-        for city in cities:
-            threading.Thread(target=fetch_and_send_cars, args=(city,)).start()
+        with ThreadPoolExecutor() as executor:
+            executor.map(fetch_and_send_cars, cities)
 
 
 if __name__ == "__main__":
