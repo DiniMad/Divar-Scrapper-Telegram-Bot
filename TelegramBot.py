@@ -8,13 +8,16 @@ class TelegramBot:
 
         if on_message_received_callback:
             self.dispatcher = self.updater.dispatcher
-            message_received_handler = MessageHandler(Filters.text, on_message_received_callback)
+            message_received_handler = MessageHandler(
+                Filters.text, on_message_received_callback)
             self.dispatcher.add_handler(message_received_handler)
 
         try:
             self.updater.start_polling()
         except:
-            print("Something went wrong while starting the bot.")
+            print("Can not start the bot.\nCheck you network and run "
+                  "application again")
+            quit(1)
 
     def __del__(self):
         try:
@@ -24,6 +27,8 @@ class TelegramBot:
 
     def send_text(self, chat_id, text):
         try:
-            self.updater.bot.send_message(chat_id=chat_id, text=text, parse_mode=telegram.ParseMode.MARKDOWN)
+            self.updater.bot.send_message(
+                chat_id=chat_id, text=text,
+                parse_mode=telegram.ParseMode.MARKDOWN)
         except:
             print(f"Unexpected error during sending message to {chat_id}.")
