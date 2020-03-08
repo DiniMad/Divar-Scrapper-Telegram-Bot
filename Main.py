@@ -1,4 +1,4 @@
-import requests
+from requests import get
 from bs4 import BeautifulSoup
 import threading
 from Car import Car
@@ -6,6 +6,7 @@ from TelegramBot import TelegramBot
 from OneTimePassword import OneTimePassword
 
 FETCH_NEW_DATA_PERIOD = 60 * 5  # Every 5 minuets
+URL_ADDRESS = "https://api.divar.ir/v8/web-search/{city}/car?q=تصادفی"
 sent_cars_tokens = []
 telegram_bot: TelegramBot
 TELEGRAM_BOT_TOKEN = "870895817:AAGo3vzpDx9yCrZ-JS-xiNpywL78gj-SLIc"
@@ -15,7 +16,7 @@ one_time_password: OneTimePassword
 
 
 def get_cities():
-    response = requests.get("https://divar.ir/")
+    response = get("https://divar.ir/")
     if response.status_code == 200:
         try:
             soup = BeautifulSoup(response.content, 'html.parser')
@@ -28,26 +29,27 @@ def get_cities():
 
 
 def fetch_and_send_cars(city):
-    search_result = requests.get(
-        f"https://api.divar.ir/v8/web-search/{city}/car?q=تصادفی")
+    search_result = get(URL_ADDRESS.format(city=city))
     if search_result.status_code != 200:
         return
 
-    for c in search_result.json()["widget_list"]:
+    for c in search_result.json().get("widget_list", 0):
         if c["data"]["token"] not in sent_cars_tokens and (
-                c["data"]["normal_text"].startswith("دقایقی پیش") or "فوری" in c["data"]["red_text"]):
+                c["data"]["normal_text"].startswith("دقایقی پیش") or "فوری" in
+                c["data"]["red_text"]):
 
             car = Car(c["data"]["token"], c["data"]["title"],
                       c["data"]["description"], c["data"]["city"],
                       c["data"]["district"], c["data"]["image"])
 
-            text = f"[{car.title}]({car.link()})\n\n[{car.city}" \
-                   f"-{car.district if car.district is not None else ''}]({car.image_url})\n\n_{car.price}_"
             for user_id in bot_users_ids:
-                telegram_bot.send_text(user_id, text)
+                telegram_bot.send_text(user_id, str(car))
+
             sent_cars_tokens.append(c["data"]["token"])
-        elif c["data"]["token"] in sent_cars_tokens and not c["data"]["normal_text"].startswith(
-                "دقایقی پیش") and "فوری" not in c["data"]["red_text"]:
+
+        elif c["data"]["token"] in sent_cars_tokens and not c["data"][
+            "normal_text"].startswith("دقایقی پیش") \
+                and "فوری" not in c["data"]["red_text"]:
             sent_cars_tokens.remove(c["data"]["token"])
 
 
@@ -70,7 +72,8 @@ def on_telegram_message_received(update, context):
                 telegram_bot.send_text(
                     sender_id, text="`شما به لیست دریافت گنندگان اضافه شدید.`")
         else:
-            telegram_bot.send_text(sender_id, text="`کد اشتباه است.`")
+            telegram_bot.send_text(sender_id, text="`کد اشتباه است یا منقضی "
+                                                   "شده است.`")
 
 
 def main(cities):
@@ -78,12 +81,9 @@ def main(cities):
     if bot_users_ids:
         for city in cities:
             threading.Thread(target=fetch_and_send_cars, args=(city,)).start()
-    else:
-        print("No subscriber.")
 
 
 if __name__ == "__main__":
-    telegram_bot = TelegramBot(
-        TELEGRAM_BOT_TOKEN, on_telegram_message_received)
+    telegram_bot = TelegramBot(TELEGRAM_BOT_TOKEN, on_telegram_message_received)
     one_time_password = OneTimePassword()
     main(get_cities())
