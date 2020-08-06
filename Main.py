@@ -10,7 +10,7 @@ FETCH_NEW_DATA_PERIOD = 60 * 5  # Every 5 minuets
 URL_ADDRESS = "https://api.divar.ir/v8/web-search/{city}/car?q=تصادفی"
 sent_cars_tokens = []
 telegram_bot: TelegramBot
-TELEGRAM_BOT_TOKEN = "870895817:AAGo3vzpDx9yCrZ-JS-xiNpywL78gj-SLIc"
+TELEGRAM_BOT_TOKEN = "<TELEGRAM_BOT_TOKEN>"
 owner_telegram_id = 105219253
 bot_users_ids = []
 one_time_password: OneTimePassword
